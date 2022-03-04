@@ -3,6 +3,7 @@ package com.keycloak.starterpaket.controller;
 
 import com.keycloak.starterpaket.requests.KeycloakUser;
 import com.keycloak.starterpaket.utils.KeycloakClient;
+import com.keycloak.starterpaket.utils.AdminTokenClient;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.representations.AccessToken;
@@ -18,6 +19,10 @@ import javax.annotation.security.RolesAllowed;
 @RequestMapping("api/auth/")
 public class AuthController extends KeycloakClient {
 
+    String a = "/realms/SpringbootKeycloak/protocol/openid-connect/token";
+    String b = "/realms/master/protocol/openid-connect/token";
+    String userpath = "/admin/realms/SpringbootKeycloak/users";
+
     @PostMapping("refresh")
     public ResponseEntity<?> refresh(@RequestBody String refresh_token){
         String[] body = {
@@ -26,7 +31,7 @@ public class AuthController extends KeycloakClient {
                 "client_secret", keycloakSecret,
                 "refresh_token", refresh_token
         };
-        return getResponseEntityFromKeycloakOpenIdToken(body, "/realms/beispiel/protocol/openid-connect/token");
+        return getResponseEntityFromKeycloakOpenIdToken(body, a);
 
     }
 
@@ -39,8 +44,47 @@ public class AuthController extends KeycloakClient {
                 "username", user.getUsername(),
                 "password", user.getPassword()
         };
-        return getResponseEntityFromKeycloakOpenIdToken(body, "/realms/beispiel/protocol/openid-connect/token");
+        return getResponseEntityFromKeycloakOpenIdToken(body, a);
     }
+
+    @PostMapping("admintoken")
+    public ResponseEntity<?> admintoken(@RequestBody KeycloakUser user) {
+        String[] body = {
+                "grant_type" , "password",
+                "client_id", "admin-cli",
+
+                "username", "georg",
+                "password", "12345678"
+        };
+        return getResponseEntityFromKeycloakOpenIdToken(body, b);
+    }
+
+
+    @PostMapping("register")
+    public String register(@RequestBody KeycloakUser user) {
+        String[] tokenbody = {
+                "grant_type" , "password",
+                "client_id", "admin-cli",
+
+                "username", "georg",
+                "password", "12345678"
+        };
+
+
+        String[] body = {
+
+
+                "username", user.getUsername(),
+
+        };
+        String test = getAdminToken(tokenbody, b);
+
+        String t = registerNewUser(body, userpath, test);
+        return t;
+
+    }
+
+
 
     @RolesAllowed({"user", "admin"})
     @GetMapping("userinfo")

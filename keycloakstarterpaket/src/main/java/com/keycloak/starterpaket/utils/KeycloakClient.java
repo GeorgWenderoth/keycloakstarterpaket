@@ -50,5 +50,73 @@ public class KeycloakClient {
         }
     }
 
+
+    protected String getAdminToken(String[] body, String path) {
+        keycloakApi = apiUri + path;
+        try {
+            StringBuilder requestBody = new StringBuilder();
+            for(int i = 0; i<body.length; i++){
+                requestBody.append(body[i]);
+                if(i%2==0){
+                    requestBody.append("=");
+                }else if(i != body.length-1){
+                    requestBody.append("&");
+                }
+            }
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(new URI(keycloakApi))
+                    .headers("Content-Type", "application/x-www-form-urlencoded")
+                    .POST(
+                            HttpRequest.BodyPublishers.ofString(
+                                    requestBody.toString()
+                            )
+                    ).build();
+            HttpResponse<String> response = client.send(
+                    request,
+                    HttpResponse.BodyHandlers.ofString()
+            );
+            var json = new JSONParser(response.body());
+            return response.body();
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+    }
+
+    protected String registerNewUser(String[] body, String path, String token) {
+        keycloakApi = apiUri + path;
+        try {
+            StringBuilder requestBody = new StringBuilder();
+            for(int i = 0; i<body.length; i++){
+                requestBody.append(body[i]);
+                if(i%2==0){
+                    requestBody.append(":");
+                }else if(i != body.length-1){
+                    requestBody.append(",");
+                }
+            }
+            //var jsonEins = new JSONParser(requestBody);
+
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(new URI(keycloakApi))
+                    .headers("Content-Type", "application/json", "Authorization", "bearer ")
+                    .POST(
+
+                           HttpRequest.BodyPublishers.ofString(
+                                    requestBody.toString()
+                            )
+                    ).build();
+            HttpResponse<String> response = client.send(
+                    request,
+                    HttpResponse.BodyHandlers.ofString()
+            );
+            var json = new JSONParser(response.body());
+            return response.body();
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+    }
+
 }
 
