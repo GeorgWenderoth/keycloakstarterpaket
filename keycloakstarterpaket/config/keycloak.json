@@ -1,0 +1,12 @@
+{
+  "realm": "SpringbootKeycloak",
+  "auth-server-url": "http://localhost:8080/",
+  "ssl-required": "external",
+  "resource": "app-authz",
+  "verify-token-audience": true,
+  "credentials": {
+    "secret": "JtDzGJ7eWTFH41RHDlMVJr2ckIM6KkKW"
+  },
+  "confidential-port": 0,
+  "policy-enforcer": {}
+}
