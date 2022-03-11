@@ -1,99 +1,95 @@
 package com.keycloak.starterpaket.controller;
 
-
-import com.keycloak.starterpaket.requests.KeycloakUser;
-import com.keycloak.starterpaket.utils.KeycloakClient;
-import com.keycloak.starterpaket.utils.AdminTokenClient;
-import org.keycloak.KeycloakPrincipal;
-import org.keycloak.KeycloakSecurityContext;
-import org.keycloak.representations.AccessToken;
+import com.keycloak.starterpaket.requests.AuthAccess;
+import com.keycloak.starterpaket.responses.AuthUrl;
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.security.RolesAllowed;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
+import java.util.Base64;
+import java.util.UUID;
+
+
 
 @RestController
 @CrossOrigin("*")
-@RequestMapping("api/auth/")
-public class AuthController extends KeycloakClient {
+@RequestMapping("api/auth")
+public class AuthController {
+    @Value("${keycloak.resource}")
+    private String keycloak_client_id;
+    @Value("${token-endpoint}")
+    private String token_endpoint;
+    @Value("${auth-endpoint}")
+    private String auth_endpoint;
+    @Value("${keycloak.credentials.secret}")
+    private String client_secret;
 
-    String a = "/realms/SpringbootKeycloak/protocol/openid-connect/token";
-    String b = "/realms/master/protocol/openid-connect/token";
-    String userpath = "/admin/realms/SpringbootKeycloak/users";
 
-    @PostMapping("refresh")
-    public ResponseEntity<?> refresh(@RequestBody String refresh_token){
-        String[] body = {
-                "grant_type" , "refresh_token",
-                "client_id", keycloakClientId,
-                "client_secret", keycloakSecret,
-                "refresh_token", refresh_token
-        };
-        return getResponseEntityFromKeycloakOpenIdToken(body, a);
-
+    private String getCodeVerifier(){
+        SecureRandom sr = new SecureRandom();
+        byte[] code = new byte[32];
+        sr.nextBytes(code);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(code);
     }
 
-    @PostMapping("login")
-    public ResponseEntity<?> login(@RequestBody KeycloakUser user) {
-        String[] body = {
-                "grant_type" , "password",
-                "client_id", keycloakClientId,
-                "client_secret", keycloakSecret,
-                "username", user.getUsername(),
-                "password", user.getPassword()
-        };
-        return getResponseEntityFromKeycloakOpenIdToken(body, a);
+    private String getCodeChallenge(String verifier) throws Exception{
+        byte[] bytes = verifier.getBytes(StandardCharsets.US_ASCII);
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        md.update(bytes, 0, bytes.length);
+        byte[] digest = md.digest();
+        return org.apache.commons.codec.binary.Base64.encodeBase64URLSafeString(digest);
     }
 
-    @PostMapping("admintoken")
-    public ResponseEntity<?> admintoken(@RequestBody KeycloakUser user) {
-        String[] body = {
-                "grant_type" , "password",
-                "client_id", "admin-cli",
-
-                "username", "georg",
-                "password", "12345678"
-        };
-        return getResponseEntityFromKeycloakOpenIdToken(body, b);
+    private String getAuthUrl(String challange, String state, String redirect){
+        return auth_endpoint+ "?" +
+                "response_type=code&" +
+                "code_challenge=" + challange + "&" +
+                "code_challenge_method=S256&" +
+                "client_id=" + keycloak_client_id + "&" +
+                "redirect_uri="+ redirect +"&" +
+                "state="+ state +"";
     }
 
-
-    @PostMapping("register")
-    public String register(@RequestBody KeycloakUser user) {
-        String[] tokenbody = {
-                "grant_type" , "password",
-                "client_id", "admin-cli",
-
-                "username", "georg",
-                "password", "12345678"
-        };
-
-
-        String[] body = {
-
-
-                "username", user.getUsername(),
-
-        };
-        String test = getAdminToken(tokenbody, b);
-
-        String t = registerNewUser(body, userpath, test);
-        return t;
-
+    @GetMapping("url")
+    public ResponseEntity<AuthUrl> getAuthUrl(@RequestParam String redirect ){
+        var authUrl = new AuthUrl();
+        authUrl.setVerifier(getCodeVerifier());
+        try {
+            authUrl.setChallenge(getCodeChallenge(authUrl.getVerifier()));
+        }catch (Exception exception){
+            return ResponseEntity.internalServerError().build();
+        }
+        authUrl.setAccess_code(UUID.randomUUID().toString().replace("-","x"));
+        authUrl.setRedirect(redirect);
+        authUrl.setUrl(getAuthUrl(authUrl.getChallenge(), authUrl.getAccess_code(), redirect));
+        AuthUrl.urls.add(authUrl);
+        return ResponseEntity.ok(authUrl);
     }
 
-
-
-    @RolesAllowed({"user", "admin"})
-    @GetMapping("userinfo")
-    public ResponseEntity<?> userinfo() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        KeycloakPrincipal principal = (KeycloakPrincipal) auth.getPrincipal();
-        KeycloakSecurityContext session = principal.getKeycloakSecurityContext();
-        AccessToken token = session.getToken();
-        String id = token.getId();
-        return ResponseEntity.ok(id);
+    @PostMapping("token")
+    public ResponseEntity<?> getToken(@RequestBody AuthAccess authAccess) throws UnirestException {
+        AuthUrl auth = AuthUrl.urls.stream().filter(authUrl -> authUrl.getAccess_code().equals(authAccess.getAccess_code()))
+                .findFirst().orElse(null);
+        if(auth == null){
+            return ResponseEntity.notFound().build();
+        }
+        HttpResponse<String> response =
+                Unirest.post(token_endpoint)
+                        .header("content-type", "application/x-www-form-urlencoded")
+                        .body("grant_type=authorization_code&client_id="+keycloak_client_id
+                                +"&code_verifier="+auth.getVerifier()
+                                +"&code="+authAccess.getCode()
+                                +"&redirect_uri="+auth.getRedirect() // brauche ich nicht? weil in keycloak console
+                                +"&client_secret="+client_secret
+                        )
+                        .asString();
+        AuthUrl.urls.remove(auth);
+        return ResponseEntity.ok(response.getBody());
     }
 }
