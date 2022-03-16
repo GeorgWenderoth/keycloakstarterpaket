@@ -2,9 +2,11 @@ package com.keycloak.starterpaket.controller;
 
 import com.keycloak.starterpaket.requests.AuthAccess;
 import com.keycloak.starterpaket.responses.AuthUrl;
+import com.keycloak.starterpaket.service.KeycloakService;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +22,9 @@ import java.util.UUID;
 @RestController
 @CrossOrigin("*")
 @RequestMapping("api/auth")
+@RequiredArgsConstructor
 public class AuthController {
+    /*
     @Value("${keycloak.resource}")
     private String keycloak_client_id;
     @Value("${token-endpoint}")
@@ -55,24 +59,36 @@ public class AuthController {
                 "redirect_uri="+ redirect +"&" +
                 "state="+ state +"";
     }
+    */
+
+    private final KeycloakService keycloakService;
 
     @GetMapping("url")
     public ResponseEntity<AuthUrl> getAuthUrl(@RequestParam String redirect ){
-        var authUrl = new AuthUrl();
-        authUrl.setVerifier(getCodeVerifier());
         try {
-            authUrl.setChallenge(getCodeChallenge(authUrl.getVerifier()));
+            var authUrl=  keycloakService.generateAuthUrl(redirect);
+            return ResponseEntity.ok(authUrl);
         }catch (Exception exception){
             return ResponseEntity.internalServerError().build();
         }
-        authUrl.setAccess_code(UUID.randomUUID().toString().replace("-","x"));
-        authUrl.setRedirect(redirect);
-        authUrl.setUrl(getAuthUrl(authUrl.getChallenge(), authUrl.getAccess_code(), redirect));
-        AuthUrl.urls.add(authUrl);
-        return ResponseEntity.ok(authUrl);
+
+
     }
 
     @PostMapping("token")
+    public ResponseEntity<?> getToken(@RequestBody AuthAccess authAccess) throws UnirestException {
+        AuthUrl auth = keycloakService.findAuthUrl(authAccess);
+        if(auth == null){
+            return ResponseEntity.notFound().build();
+        }
+       String body = keycloakService.keycloakRequest(authAccess.getCode(), auth);
+        AuthUrl.urls.remove(auth);
+        return ResponseEntity.ok(body);
+    }
+}
+
+/*
+@PostMapping("token")
     public ResponseEntity<?> getToken(@RequestBody AuthAccess authAccess) throws UnirestException {
         AuthUrl auth = AuthUrl.urls.stream().filter(authUrl -> authUrl.getAccess_code().equals(authAccess.getAccess_code()))
                 .findFirst().orElse(null);
@@ -92,4 +108,4 @@ public class AuthController {
         AuthUrl.urls.remove(auth);
         return ResponseEntity.ok(response.getBody());
     }
-}
+ */
