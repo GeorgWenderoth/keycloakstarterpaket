@@ -11,6 +11,8 @@ import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import com.mashape.unirest.request.HttpRequestWithBody;
 import kong.unirest.MockClient;
+
+//import kong.unirest.HttpMethod;
 import lombok.RequiredArgsConstructor;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
@@ -35,7 +37,7 @@ public class KeycloakServiceTest {
 
 
 
-   // @InjectMocks // warum gehts jetzt
+
     private  KeycloakService keycloakService = new KeycloakService();
 
     @Value("${keycloak.resource}")
@@ -44,10 +46,7 @@ public class KeycloakServiceTest {
     @Value("${token-endpoint}")
     private String token_endpoint;
 
-  /*  @Test
-    public void getAuthUrlTest(){
-        keycloakService.getAuthUrl("123", "456", "http://localhost");
-    } */
+
 
     @Test
     public void generateAuthUrlTest() throws Exception {
@@ -61,16 +60,9 @@ public class KeycloakServiceTest {
 
         Assert.assertTrue(url.contains("code_challenge"));
         Assert.assertTrue(url.contains("code_challenge_method=S256"));
-        //Assert.assertTrue(url.contains("login-app"));
+
         Assert.assertTrue(url.contains("client_id"));
-       // String redirectParts = parts[4].split("=
-       /* assertEquals("http://localhost:8080/realms/SpringbootKeycloak/protocol/openid-connect/auth"+ "?" +
-                "response_type=code&" +
-                "code_challenge=" + challange + "&" +
-                "code_challenge_method=S256&" +
-                "client_id=" + keycloak_client_id + "&" +
-                "redirect_uri="+ redirect +"&" +
-                "state="+ state +"",) */
+
 
     }
     @Test
@@ -106,11 +98,17 @@ public class KeycloakServiceTest {
     }
 
 
-
-   /* @Test
+/*
+    @Test
     public void test_keycloakRequest() throws UnirestException {
         MockClient mock = MockClient.register();
+        HttpTransport transport = new MockHttpTransport();
+        HttpRequest request = transport.createRequestFactory().buildGetRequest(HttpTesting.SIMPLE_GENERIC_URL);
+        HttpResponse response = request.execute();
 
+        System.out.println(response);
+
+        mock.expect(HttpMethod.POST, token_endpoint)
         mock.expect(HttpMethod.POST, token_endpoint)
                 .thenReturn("You can do anything!");
 
@@ -125,7 +123,7 @@ public class KeycloakServiceTest {
 
        /* Mockito.when(Unirest.post(token_endpoint)).thenReturn(new HttpResponse<>())
         var test = keycloakService.keycloakRequest() */
-  //  }
+   // }
 
 
 }

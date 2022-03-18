@@ -2,6 +2,7 @@ package com.keycloak.starterpaket.service;
 
 
 import com.keycloak.starterpaket.requests.AuthAccess;
+import com.keycloak.starterpaket.requests.RefreshTokenAccess;
 import com.keycloak.starterpaket.responses.AuthUrl;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
@@ -84,4 +85,32 @@ public class KeycloakService {
                            .asString();
            return response.getBody();
        }
+
+    public String keycloakTokenRefreshTokenRequest(RefreshTokenAccess refreshToken) throws UnirestException {
+        HttpResponse<String> response =
+                Unirest.post(token_endpoint)
+                        .header("content-type", "application/x-www-form-urlencoded")
+                        .body("grant_type=refresh_token&client_id="+keycloak_client_id
+                                +"&refresh_token="+refreshToken.getRefresh_token()
+                                +"&redirect_uri="+ "http://localhost:3000/*"
+                                +"&client_secret="+client_secret
+                        )
+                        .asString();
+        return response.getBody();
+    }
+
+    public String keycloakTokenCredentialsRequest() throws UnirestException {
+        HttpResponse<String> response =
+                Unirest.post(token_endpoint)
+                        .header("content-type", "application/x-www-form-urlencoded")
+                        .body("grant_type=client_credentials&client_id="+keycloak_client_id
+                                +"&redirect_uri="+ "http://localhost:3000/*" // brauche ich nicht? weil in keycloak console
+                                +"&client_secret="+client_secret
+                        )
+                        .asString();
+        return response.getBody();
+
+    }
+
+
 }

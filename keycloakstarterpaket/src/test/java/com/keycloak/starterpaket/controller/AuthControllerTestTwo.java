@@ -4,11 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import com.keycloak.starterpaket.KeycloakstarterpaketApplication;
 import com.keycloak.starterpaket.requests.AuthAccess;
+import com.keycloak.starterpaket.requests.RefreshTokenAccess;
 import com.keycloak.starterpaket.responses.AuthUrl;
 import com.keycloak.starterpaket.service.KeycloakService;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
+import jdk.net.SocketFlow;
+import org.junit.Assert;
 import org.junit.Test;
 //import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +33,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.io.Console;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
@@ -40,6 +44,7 @@ import java.util.UUID;
 import static org.assertj.core.internal.bytebuddy.matcher.ElementMatchers.any;
 import static org.assertj.core.internal.bytebuddy.matcher.ElementMatchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -64,6 +69,20 @@ public class AuthControllerTestTwo {
     @InjectMocks
     private AuthController controller;
 
+    private KeycloakService unMockedKService = mock(KeycloakService.class);
+
+    private AuthController unMockedAController = new AuthController(unMockedKService);
+
+
+    @Value("${keycloak.resource}")
+    private String keycloak_client_id;
+    @Value("${token-endpoint}")
+    private String token_endpoint;
+    @Value("${auth-endpoint}")
+    private String auth_endpoint;
+    @Value("${keycloak.credentials.secret}")
+    private String client_secret;
+
     @Test
     public void test() throws Exception{
 
@@ -87,7 +106,7 @@ public class AuthControllerTestTwo {
 
     }
     @Test
-    public void testUrl_fail() throws Exception{
+    public void testUrl_fail() throws Exception{ // noch nicht ertig
 
         mvc.perform(get("/api/auth/url?redirect=http://localhost:3000/*")
                 .contentType(MediaType.APPLICATION_JSON))
@@ -97,88 +116,6 @@ public class AuthControllerTestTwo {
                 .andExpect(jsonPath("$.access_code").isString());
 
     }
-   /* @TestConfiguration
-    static class testImpl {
-        @Bean
-       public KeycloakService keycloakService(){
-            return new KeycloakService(){
-                @Value("${keycloak.resource}")
-                private String keycloak_client_id;
-                @Value("${token-endpoint}")
-                private String token_endpoint;
-                @Value("${auth-endpoint}")
-                private String auth_endpoint;
-                @Value("${keycloak.credentials.secret}")
-                private String client_secret;
-
-
-                private String getCodeVerifier(){
-                    SecureRandom sr = new SecureRandom();
-                    byte[] code = new byte[32];
-                    sr.nextBytes(code);
-                    return Base64.getUrlEncoder().withoutPadding().encodeToString(code);
-                }
-
-                private String getCodeChallenge(String verifier) throws Exception{
-                    byte[] bytes = verifier.getBytes(StandardCharsets.US_ASCII);
-                    MessageDigest md = MessageDigest.getInstance("SHA-256");
-                    md.update(bytes, 0, bytes.length);
-                    byte[] digest = md.digest();
-                    return org.apache.commons.codec.binary.Base64.encodeBase64URLSafeString(digest);
-                }
-
-                private String getAuthUrl(String challange, String state, String redirect){
-                    return auth_endpoint+ "?" +
-                            "response_type=code&" +
-                            "code_challenge=" + challange + "&" +
-                            "code_challenge_method=S256&" +
-                            "client_id=" + keycloak_client_id + "&" +
-                            "redirect_uri="+ redirect +"&" +
-                            "state="+ state +"";
-                }
-
-                public AuthUrl generateAuthUrl(String redirect) throws Exception{
-                    var authUrl = new AuthUrl();
-                    authUrl.setVerifier(getCodeVerifier());
-
-                    authUrl.setChallenge(getCodeChallenge(authUrl.getVerifier()));
-
-                    authUrl.setAccess_code(UUID.randomUUID().toString().replace("-","x"));
-                    authUrl.setRedirect(redirect);
-                    authUrl.setUrl(getAuthUrl(authUrl.getChallenge(), authUrl.getAccess_code(), redirect));
-                    AuthUrl.urls.add(authUrl);
-                    return authUrl;
-                }
-
-                public AuthUrl findAuthUrl(AuthAccess authAccess){
-                    AuthUrl auth = AuthUrl.urls.stream().filter(authUrl -> authUrl.getAccess_code().equals(authAccess.getAccess_code()))
-                            .findFirst().orElse(null);
-                    return auth;
-                }
-
-                public String keycloakRequest(AuthAccess authAccess, AuthUrl auth) throws UnirestException {
-                   /* HttpResponse<String> response =
-                            Unirest.post(token_endpoint)
-                                    .header("content-type", "application/x-www-form-urlencoded")
-                                    .body("grant_type=authorization_code&client_id="+keycloak_client_id
-                                            +"&code_verifier="+auth.getVerifier()
-                                            +"&code="+authAccess.getCode()
-                                            +"&redirect_uri="+auth.getRedirect() // brauche ich nicht? weil in keycloak console
-                                            +"&client_secret="+client_secret
-                                    )
-                                    .asString();
-                    return response.getBody(); */
-    /*     String body = "{\"access_token\":\"eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJlR2tjanE3Y3lQcElqeTRJazZ3TFVMaFgxSmc5cjdTcVdSSEJDSVB6QXYwIn0.eyJleHAiOjE2NDcyNjYyMTYsImlhdCI6MTY0NzI2NTg1NiwiYXV0aF90aW1lIjoxNjQ3MjY1ODE3LCJqdGkiOiJjMGYyMzJkMC0zZWMzLTQ5YjQtYWY1Yi1kNzFiMWE5OTYyYWEiLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1NwcmluZ2Jvb3RLZXljbG9hayIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiI2ZjAwM2U2ZC1kMzRjLTRjM2QtYjI2MS1hYmEzNjg2ZTUwMGQiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJsb2dpbi1hcHAiLCJzZXNzaW9uX3N0YXRlIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIiwiYWNyIjoiMSIsInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJkZWZhdWx0LXJvbGVzLXNwcmluZ2Jvb3RrZXljbG9hayIsIm9mZmxpbmVfYWNjZXNzIiwidW1hX2F1dGhvcml6YXRpb24iLCJ1c2VyIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJwcm9maWxlIGVtYWlsIiwic2lkIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJuYW1lIjoiaGVpZGkga2x1bSIsInByZWZlcnJlZF91c2VybmFtZSI6ImhlaWRpIiwiZ2l2ZW5fbmFtZSI6ImhlaWRpIiwiZmFtaWx5X25hbWUiOiJrbHVtIiwiZW1haWwiOiJoZWlkaUBrbHVtLmRlIn0.g7nIzz48dCVhPLqJdA7EM3M-GAkxgOljP731xrrCimFe4cJaYV_Q9fOPJyCJsP1Mgbn2XeswLFz73Zwx_RF3RNcThUSRA2raQcUQUilDdiXD3h_YP4nnlMFc40Z5Vo5sTIohRgNe2JtAVNTUsE3VpvqobICww9PQPvA12jiVgwnKXN2f62WRMNKQYT_3LvXGTxdI4QwRE_PmUyS2STDx-vH83FcAYOuxvjpETkXJRMSgy3w85lFMdq4VCFFAcUUK8tPviA8DWveyVryeXdnRpanvvhtuo90PYfqbA1MRiZtV68HXEmKxq7pSzH9wlMSTN4GErugu1pGaXaQ3v6GwhQ\",\"expires_in\":360,\"refresh_expires_in\":1800,\"refresh_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI4M2ViYjFkYi1mZWFiLTQxZDEtYjhiNS0wMzFlMTdmYTNhZGQifQ.eyJleHAiOjE2NDcyNjc2NTYsImlhdCI6MTY0NzI2NTg1NiwianRpIjoiYTBmNTllYjAtZGE0MS00NjAzLWJiZWItNTNhYjU3OTRkM2Q4IiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9TcHJpbmdib290S2V5Y2xvYWsiLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1NwcmluZ2Jvb3RLZXljbG9hayIsInN1YiI6IjZmMDAzZTZkLWQzNGMtNGMzZC1iMjYxLWFiYTM2ODZlNTAwZCIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJsb2dpbi1hcHAiLCJzZXNzaW9uX3N0YXRlIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIiwic2NvcGUiOiJwcm9maWxlIGVtYWlsIiwic2lkIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIn0.irNyresT9wUo0F21pKwSN5xL9BagZr4PXkBaD7Dmvnk\",\"token_type\":\"Bearer\",\"not-before-policy\":0,\"session_state\":\"5f444c05-68cd-4de6-99f3-973dca4f51d0\",\"scope\":\"profile email\"}";
-                    return body;
-                }
-            };
-        }
-
-
-    }
-    */
-
-
 
     @Test
     public void testToken_MockKeycloak() throws Exception{
@@ -186,33 +123,27 @@ public class AuthControllerTestTwo {
       MvcResult test =  mvc.perform(get("/api/auth/url?redirect=http://localhost:3000/*")
               .contentType(MediaType.APPLICATION_JSON))
               .andReturn();
-
-
-
        String a = test.getResponse().getContentAsString();
 
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String,Object> map = mapper.readValue(a, Map.class);
+        String accesscode = (String) map.get("access_code");
+        AuthAccess authAccess = new AuthAccess("idajowdijdaiwoj", accesscode);
+        AuthUrl authUrl = new AuthUrl();
+        authUrl.setAccess_code(accesscode);
+        AuthUrl.urls.add(authUrl);
 
+        System.out.println("log:" + authUrl.toString());
+        Mockito.when(keycloakService.findAuthUrl(authAccess)).thenReturn(authUrl);
 
-        Mockito.when(keycloakService.keycloakRequest("idajowdijdaiwoj", new AuthUrl() )).thenReturn("{\"access_token\":\"eyJhbGciOiJSUzI1" +
+        Mockito.when(keycloakService.keycloakRequest("idajowdijdaiwoj", authUrl )).thenReturn("{\"access_token\":\"eyJhbGciOiJSUzI1" +
                 "NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJlR2tjanE3Y3lQcElqeTRJazZ3TFVMaFgxSmc5cjdTcVdSSEJDSVB6QXYwIn0.eyJleHAiOjE2NDcyNjYyMTY" +
                 "sImlhdCI6MTY0NzI2NTg1NiwiYXV0aF90aW1lIjoxNjQ3MjY1ODE3LCJqdGkiOiJjMGYyMzJkMC0zZWMzLTQ5YjQtYWY1Yi1kNzFiMWE5OTYyYWEiLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1NwcmluZ2Jvb3RLZXljbG9hayIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiI2ZjAwM2U2ZC1kMzRjLTRjM2QtYjI2MS1hYmEzNjg2ZTUwMGQiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJsb2dpbi1hcHAiLCJzZXNzaW9uX3N0YXRlIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIiwiYWNyIjoiMSIsInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJkZWZhdWx0LXJvbGVzLXNwcmluZ2Jvb3RrZXljbG9hayIsIm9mZmxpbmVfYWNjZXNzIiwidW1hX2F1dGhvcml6YXRpb24iLCJ1c2VyIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJwcm9maWxlIGVtYWlsIiwic2lkIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJuYW" +
                 "1lIjoiaGVpZGkga2x1bSIsInByZWZlcnJlZF91c2VybmFtZSI6ImhlaWRpIiwiZ2l2ZW5fbmFtZSI6ImhlaWRpIiwiZmFtaWx5X25hbWUiOiJrbHVtIiwiZW1haWwiOiJoZWlkaUBrbHVtLmRlIn0.g7nIzz48dCVhPLqJdA7EM3M-GAkxgOljP731xrrCimFe4cJaYV_Q9fOPJyCJsP1Mgbn2XeswLFz73Zwx_RF3RNcThUSRA2raQcUQUilDdiXD3h_YP4nnlMFc40Z5Vo5sTIohRgNe2JtAVNTUsE3VpvqobICww9PQPvA12jiVgwnKXN2f62WRMNKQYT_3LvXGTxdI4QwRE_PmUyS2STDx-vH83FcAYOuxvjpETkXJRMSgy3w85lFMdq4VCFFAcUUK8tPviA8DWveyVryeXdnRpanvvhtuo90PYfqbA1MRiZtV68HXEmKxq7pSzH9wlMSTN4GErugu1pGaXaQ3v6GwhQ\",\"expires_in\":360,\"refresh_expires_in\":1800,\"refresh_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI4M2ViYjFkYi1mZWFiLTQxZDEtYjhiNS0wMzFlMTdmYTNhZGQifQ.eyJleHAiOjE2NDcyNjc2NTYsImlhdCI6MTY0NzI2NTg1NiwianRpIjoiYTBmNTllYjAtZGE0MS00NjAzLWJiZWItNTNhYjU3OTRkM2Q4IiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9TcHJpbmdib290S2V5Y2xvYWsiLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1NwcmluZ2Jvb3RLZXljbG9hayIsInN1YiI6IjZmMDAzZTZkLWQzNGMtNGMzZC1iMjYxLWFiYTM2ODZlNTAwZCIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJsb2dpbi1hcHAiLCJzZXNzaW9uX3N0YXRlIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIiwic2NvcGUiOiJwcm9maWxlIGVtYWlsIiwic2lkIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIn0.irNyresT9wUo0F" +
                 "21pKwSN5xL9BagZr4PXkBaD7Dmvnk\",\"token_type\":\"Bearer\",\"not-before-policy\":0,\"session_state\":\"5f444c" +
                 "05-68cd-4de6-99f3-973dca4f51d0\",\"scope\":\"profile email\"}");
 
-        ObjectMapper mapper = new ObjectMapper();
-        Map<String,Object> map = mapper.readValue(a, Map.class);
-        String accesscode = (String) map.get("access_code");
 
-
-      /*  ObjectMapper mapper = new ObjectMapper();
-        Map<String,Object> map = mapper.readValue(response.getBody(), Map.class);
-        String accesscode = (String) map.get("access_code"); */
-       // test ="/api/auth/url?redirect=http://localhost:3000/*"
-
-       // ob =
-
-        AuthAccess authAccess = new AuthAccess("idajowdijdaiwoj", accesscode);
         var response = controller.getToken(authAccess);
             assertEquals( "{\"access_token\":\"eyJhbGciOiJSUzI1" +
                     "NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJlR2tjanE3Y3lQcElqeTRJazZ3TFVMaFgxSmc5cjdTcVdSSEJDSVB6QXYwIn0.eyJleHAiOjE2NDcyNjYyMTY" +
@@ -220,18 +151,51 @@ public class AuthControllerTestTwo {
                     "1lIjoiaGVpZGkga2x1bSIsInByZWZlcnJlZF91c2VybmFtZSI6ImhlaWRpIiwiZ2l2ZW5fbmFtZSI6ImhlaWRpIiwiZmFtaWx5X25hbWUiOiJrbHVtIiwiZW1haWwiOiJoZWlkaUBrbHVtLmRlIn0.g7nIzz48dCVhPLqJdA7EM3M-GAkxgOljP731xrrCimFe4cJaYV_Q9fOPJyCJsP1Mgbn2XeswLFz73Zwx_RF3RNcThUSRA2raQcUQUilDdiXD3h_YP4nnlMFc40Z5Vo5sTIohRgNe2JtAVNTUsE3VpvqobICww9PQPvA12jiVgwnKXN2f62WRMNKQYT_3LvXGTxdI4QwRE_PmUyS2STDx-vH83FcAYOuxvjpETkXJRMSgy3w85lFMdq4VCFFAcUUK8tPviA8DWveyVryeXdnRpanvvhtuo90PYfqbA1MRiZtV68HXEmKxq7pSzH9wlMSTN4GErugu1pGaXaQ3v6GwhQ\",\"expires_in\":360,\"refresh_expires_in\":1800,\"refresh_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI4M2ViYjFkYi1mZWFiLTQxZDEtYjhiNS0wMzFlMTdmYTNhZGQifQ.eyJleHAiOjE2NDcyNjc2NTYsImlhdCI6MTY0NzI2NTg1NiwianRpIjoiYTBmNTllYjAtZGE0MS00NjAzLWJiZWItNTNhYjU3OTRkM2Q4IiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9TcHJpbmdib290S2V5Y2xvYWsiLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1NwcmluZ2Jvb3RLZXljbG9hayIsInN1YiI6IjZmMDAzZTZkLWQzNGMtNGMzZC1iMjYxLWFiYTM2ODZlNTAwZCIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJsb2dpbi1hcHAiLCJzZXNzaW9uX3N0YXRlIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIiwic2NvcGUiOiJwcm9maWxlIGVtYWlsIiwic2lkIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIn0.irNyresT9wUo0F" +
                     "21pKwSN5xL9BagZr4PXkBaD7Dmvnk\",\"token_type\":\"Bearer\",\"not-before-policy\":0,\"session_state\":\"5f444c" +
                     "05-68cd-4de6-99f3-973dca4f51d0\",\"scope\":\"profile email\"}", response.getBody());
+    }
 
-        /*mvc.perform(post("/api/auth/token")
-                .contentType(MediaType.APPLICATION_JSON).content( "{\"code\": \"idajowdijdaiwoj\", \"access_code\":\"" + accesscode + "\"}"
-         ))
-                .andExpect(jsonPath("$.access_token").isString())
-                .andExpect(status().isOk());
- */
+
+    @Test
+    public void testToken_MockKeycloakSecontTry() throws Exception{
+        //keycloakService.keycloakRequest()
+        MvcResult test =  mvc.perform(get("/api/auth/url?redirect=http://localhost:3000/*")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andReturn();
+        String a = test.getResponse().getContentAsString();
+
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String,Object> map = mapper.readValue(a, Map.class);
+        String accesscode = (String) map.get("access_code");
+        AuthAccess authAccess = new AuthAccess("idajowdijdaiwoj", accesscode);
+        AuthUrl authUrl = new AuthUrl();
+        authUrl.setAccess_code(accesscode);
+        AuthUrl.urls.add(authUrl);
+
+        System.out.println("log:" + authUrl.toString());
+        System.out.println(authAccess);
+        Mockito.when(unMockedKService.findAuthUrl(authAccess)).thenCallRealMethod();
+
+        Mockito.when(unMockedKService.keycloakRequest("idajowdijdaiwoj", authUrl )).thenReturn("{\"access_token\":\"eyJhbGciOiJSUzI1" +
+                "NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJlR2tjanE3Y3lQcElqeTRJazZ3TFVMaFgxSmc5cjdTcVdSSEJDSVB6QXYwIn0.eyJleHAiOjE2NDcyNjYyMTY" +
+                "sImlhdCI6MTY0NzI2NTg1NiwiYXV0aF90aW1lIjoxNjQ3MjY1ODE3LCJqdGkiOiJjMGYyMzJkMC0zZWMzLTQ5YjQtYWY1Yi1kNzFiMWE5OTYyYWEiLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1NwcmluZ2Jvb3RLZXljbG9hayIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiI2ZjAwM2U2ZC1kMzRjLTRjM2QtYjI2MS1hYmEzNjg2ZTUwMGQiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJsb2dpbi1hcHAiLCJzZXNzaW9uX3N0YXRlIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIiwiYWNyIjoiMSIsInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJkZWZhdWx0LXJvbGVzLXNwcmluZ2Jvb3RrZXljbG9hayIsIm9mZmxpbmVfYWNjZXNzIiwidW1hX2F1dGhvcml6YXRpb24iLCJ1c2VyIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJwcm9maWxlIGVtYWlsIiwic2lkIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJuYW" +
+                "1lIjoiaGVpZGkga2x1bSIsInByZWZlcnJlZF91c2VybmFtZSI6ImhlaWRpIiwiZ2l2ZW5fbmFtZSI6ImhlaWRpIiwiZmFtaWx5X25hbWUiOiJrbHVtIiwiZW1haWwiOiJoZWlkaUBrbHVtLmRlIn0.g7nIzz48dCVhPLqJdA7EM3M-GAkxgOljP731xrrCimFe4cJaYV_Q9fOPJyCJsP1Mgbn2XeswLFz73Zwx_RF3RNcThUSRA2raQcUQUilDdiXD3h_YP4nnlMFc40Z5Vo5sTIohRgNe2JtAVNTUsE3VpvqobICww9PQPvA12jiVgwnKXN2f62WRMNKQYT_3LvXGTxdI4QwRE_PmUyS2STDx-vH83FcAYOuxvjpETkXJRMSgy3w85lFMdq4VCFFAcUUK8tPviA8DWveyVryeXdnRpanvvhtuo90PYfqbA1MRiZtV68HXEmKxq7pSzH9wlMSTN4GErugu1pGaXaQ3v6GwhQ\",\"expires_in\":360,\"refresh_expires_in\":1800,\"refresh_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI4M2ViYjFkYi1mZWFiLTQxZDEtYjhiNS0wMzFlMTdmYTNhZGQifQ.eyJleHAiOjE2NDcyNjc2NTYsImlhdCI6MTY0NzI2NTg1NiwianRpIjoiYTBmNTllYjAtZGE0MS00NjAzLWJiZWItNTNhYjU3OTRkM2Q4IiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9TcHJpbmdib290S2V5Y2xvYWsiLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1NwcmluZ2Jvb3RLZXljbG9hayIsInN1YiI6IjZmMDAzZTZkLWQzNGMtNGMzZC1iMjYxLWFiYTM2ODZlNTAwZCIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJsb2dpbi1hcHAiLCJzZXNzaW9uX3N0YXRlIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIiwic2NvcGUiOiJwcm9maWxlIGVtYWlsIiwic2lkIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIn0.irNyresT9wUo0F" +
+                "21pKwSN5xL9BagZr4PXkBaD7Dmvnk\",\"token_type\":\"Bearer\",\"not-before-policy\":0,\"session_state\":\"5f444c" +
+                "05-68cd-4de6-99f3-973dca4f51d0\",\"scope\":\"profile email\"}");
+
+        Mockito.when(unMockedAController.getToken(authAccess)).thenCallRealMethod();
+        //AuthAccess authAccess = new AuthAccess("idajowdijdaiwoj", accesscode);
+        var response = unMockedAController.getToken(authAccess);
+        assertEquals( "{\"access_token\":\"eyJhbGciOiJSUzI1" +
+                "NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJlR2tjanE3Y3lQcElqeTRJazZ3TFVMaFgxSmc5cjdTcVdSSEJDSVB6QXYwIn0.eyJleHAiOjE2NDcyNjYyMTY" +
+                "sImlhdCI6MTY0NzI2NTg1NiwiYXV0aF90aW1lIjoxNjQ3MjY1ODE3LCJqdGkiOiJjMGYyMzJkMC0zZWMzLTQ5YjQtYWY1Yi1kNzFiMWE5OTYyYWEiLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1NwcmluZ2Jvb3RLZXljbG9hayIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiI2ZjAwM2U2ZC1kMzRjLTRjM2QtYjI2MS1hYmEzNjg2ZTUwMGQiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJsb2dpbi1hcHAiLCJzZXNzaW9uX3N0YXRlIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIiwiYWNyIjoiMSIsInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJkZWZhdWx0LXJvbGVzLXNwcmluZ2Jvb3RrZXljbG9hayIsIm9mZmxpbmVfYWNjZXNzIiwidW1hX2F1dGhvcml6YXRpb24iLCJ1c2VyIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJwcm9maWxlIGVtYWlsIiwic2lkIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJuYW" +
+                "1lIjoiaGVpZGkga2x1bSIsInByZWZlcnJlZF91c2VybmFtZSI6ImhlaWRpIiwiZ2l2ZW5fbmFtZSI6ImhlaWRpIiwiZmFtaWx5X25hbWUiOiJrbHVtIiwiZW1haWwiOiJoZWlkaUBrbHVtLmRlIn0.g7nIzz48dCVhPLqJdA7EM3M-GAkxgOljP731xrrCimFe4cJaYV_Q9fOPJyCJsP1Mgbn2XeswLFz73Zwx_RF3RNcThUSRA2raQcUQUilDdiXD3h_YP4nnlMFc40Z5Vo5sTIohRgNe2JtAVNTUsE3VpvqobICww9PQPvA12jiVgwnKXN2f62WRMNKQYT_3LvXGTxdI4QwRE_PmUyS2STDx-vH83FcAYOuxvjpETkXJRMSgy3w85lFMdq4VCFFAcUUK8tPviA8DWveyVryeXdnRpanvvhtuo90PYfqbA1MRiZtV68HXEmKxq7pSzH9wlMSTN4GErugu1pGaXaQ3v6GwhQ\",\"expires_in\":360,\"refresh_expires_in\":1800,\"refresh_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI4M2ViYjFkYi1mZWFiLTQxZDEtYjhiNS0wMzFlMTdmYTNhZGQifQ.eyJleHAiOjE2NDcyNjc2NTYsImlhdCI6MTY0NzI2NTg1NiwianRpIjoiYTBmNTllYjAtZGE0MS00NjAzLWJiZWItNTNhYjU3OTRkM2Q4IiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9TcHJpbmdib290S2V5Y2xvYWsiLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1NwcmluZ2Jvb3RLZXljbG9hayIsInN1YiI6IjZmMDAzZTZkLWQzNGMtNGMzZC1iMjYxLWFiYTM2ODZlNTAwZCIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJsb2dpbi1hcHAiLCJzZXNzaW9uX3N0YXRlIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIiwic2NvcGUiOiJwcm9maWxlIGVtYWlsIiwic2lkIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIn0.irNyresT9wUo0F" +
+                "21pKwSN5xL9BagZr4PXkBaD7Dmvnk\",\"token_type\":\"Bearer\",\"not-before-policy\":0,\"session_state\":\"5f444c" +
+                "05-68cd-4de6-99f3-973dca4f51d0\",\"scope\":\"profile email\"}", response.getBody());
     }
 
 
 
-  @Test
+
+    @Test
   public void mockControllerUrlTest() throws Exception {
 
 
@@ -245,7 +209,7 @@ public class AuthControllerTestTwo {
   }
 
   @Test
-    public void mockControllerToken () {
+    public void mockControllerToken () throws UnirestException {
 
         AuthAccess access = new AuthAccess();
         access.setAccess_code("abc");
@@ -254,14 +218,52 @@ public class AuthControllerTestTwo {
         url.setUrl("url");
 
         Mockito.when(keycloakService.findAuthUrl(access)).thenReturn(url);
+        var response = controller.getAuthUrl("http://localhost:300/*");
         try {
             Mockito.when(keycloakService.keycloakRequest(access.getCode(), url)).thenReturn("token");
         } catch (UnirestException e) {
             e.printStackTrace();
         }
+
+        var test = controller.getToken(access);
+
+        assertEquals("token", test.getBody());
+
     }
 
 
+    @Test
+    public void name_To_Change_Test_Integation () throws Exception {
+
+        HttpResponse<String> response =
+                Unirest.post(token_endpoint)
+                        .header("content-type", "application/x-www-form-urlencoded")
+                        .body("grant_type=password&client_id="+keycloak_client_id
+                                +"&password="+ "password"
+                                +"&username="+"georgtest"
+                               // +"&redirect_uri="+auth.getRedirect() // brauche ich nicht? weil in keycloak console
+                                +"&client_secret="+client_secret
+                        )
+                        .asString();
+        Assert.assertTrue(response.getBody().contains("access_token"));
+        Assert.assertTrue(response.getBody().contains("refresh_token"));
 
 
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String,Object> map = mapper.readValue(response.getBody(), Map.class);
+        String refreshToken = (String) map.get("refresh_token");
+
+        RefreshTokenAccess tokenAccess = new RefreshTokenAccess();
+        tokenAccess.setRefresh_token(refreshToken);
+
+        HttpResponse<String> responseToken =
+                Unirest.post("http://localhost:8000/api/auth/tokenRefreshToken")
+                        .header("content-type", "application/json")
+                        .body("{\"refresh_token\": \""+ refreshToken+  "\"}"
+                        )
+                        .asString();
+
+        System.out.println(responseToken.getBody());
+        Assert.assertTrue(responseToken.getBody().contains("access_token"));
+    }
 }

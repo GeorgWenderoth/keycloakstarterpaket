@@ -1,12 +1,14 @@
 package com.keycloak.starterpaket.controller;
 
 import com.keycloak.starterpaket.requests.AuthAccess;
+import com.keycloak.starterpaket.requests.RefreshTokenAccess;
 import com.keycloak.starterpaket.responses.AuthUrl;
 import com.keycloak.starterpaket.service.KeycloakService;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import lombok.RequiredArgsConstructor;
+import org.keycloak.representations.RefreshToken;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -83,6 +85,18 @@ public class AuthController {
         }
        String body = keycloakService.keycloakRequest(authAccess.getCode(), auth);
         AuthUrl.urls.remove(auth);
+        return ResponseEntity.ok(body);
+    }
+
+    @PostMapping("tokenRefreshToken")
+    public ResponseEntity<?> getTokenWithRefreshtoken(@RequestBody RefreshTokenAccess refreshToken) throws UnirestException {
+        String body = keycloakService.keycloakTokenRefreshTokenRequest(refreshToken);
+        return ResponseEntity.ok(body);
+    }
+
+    @PostMapping("tokenCredentials")
+    public ResponseEntity<?> getTokenViaCredentialsAndSecret() throws UnirestException {
+        String body = keycloakService.keycloakTokenCredentialsRequest();
         return ResponseEntity.ok(body);
     }
 }
