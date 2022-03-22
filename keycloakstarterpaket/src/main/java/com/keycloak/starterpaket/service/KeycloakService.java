@@ -111,6 +111,4 @@ public class KeycloakService {
         return response.getBody();
 
     }
-
-
 }

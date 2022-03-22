@@ -36,8 +36,6 @@ import static org.junit.Assert.assertNull;
 public class KeycloakServiceTest {
 
 
-
-
     private  KeycloakService keycloakService = new KeycloakService();
 
     @Value("${keycloak.resource}")
@@ -97,33 +95,6 @@ public class KeycloakServiceTest {
         assertNull(test);
     }
 
-
-/*
-    @Test
-    public void test_keycloakRequest() throws UnirestException {
-        MockClient mock = MockClient.register();
-        HttpTransport transport = new MockHttpTransport();
-        HttpRequest request = transport.createRequestFactory().buildGetRequest(HttpTesting.SIMPLE_GENERIC_URL);
-        HttpResponse response = request.execute();
-
-        System.out.println(response);
-
-        mock.expect(HttpMethod.POST, token_endpoint)
-        mock.expect(HttpMethod.POST, token_endpoint)
-                .thenReturn("You can do anything!");
-
-        assertEquals(
-                "You can do anything!",
-                Unirest.post(token_endpoint).asString().getBody()
-        );
-
-        //Optional: Verify all expectations were fulfilled
-        mock.verifyAll();
-
-
-       /* Mockito.when(Unirest.post(token_endpoint)).thenReturn(new HttpResponse<>())
-        var test = keycloakService.keycloakRequest() */
-   // }
 
 
 }
