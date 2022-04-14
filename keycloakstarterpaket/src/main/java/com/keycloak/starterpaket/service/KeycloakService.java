@@ -79,7 +79,7 @@ public class KeycloakService {
                            .body("grant_type=authorization_code&client_id="+keycloak_client_id
                                    +"&code_verifier="+auth.getVerifier()
                                    +"&code="+code
-                                   +"&redirect_uri="+auth.getRedirect() // brauche ich nicht? weil in keycloak console
+                                   +"&redirect_uri="+auth.getRedirect() // brauche ich nicht? weil in keycloak console // brauche ich doch, sonst fehler
                                    +"&client_secret="+client_secret
                            )
                            .asString();
@@ -92,7 +92,7 @@ public class KeycloakService {
                         .header("content-type", "application/x-www-form-urlencoded")
                         .body("grant_type=refresh_token&client_id="+keycloak_client_id
                                 +"&refresh_token="+refreshToken.getRefresh_token()
-                                +"&redirect_uri="+ "http://localhost:3000/*"
+                               // +"&redirect_uri="+ "http://localhost:3000/*"
                                 +"&client_secret="+client_secret
                         )
                         .asString();
