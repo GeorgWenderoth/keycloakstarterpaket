@@ -61,10 +61,26 @@ public class AuthControllerTestTwo {
     @Value("${keycloak.credentials.secret}")
     private String client_secret;
 
+    @Value("${test-password}")
+    private String testpassword;
+
+    @Value("${test-username}")
+    private String testusername;
+
+    @Value("${test-redirect-url}")
+    private String testredirecturl;
+
+    @Value("${test-user-api}")
+    private String testuserapi;
+    @Value("${test-refreshtoken-api}")
+    private String testrefreshtokenapi;
+    @Value("${test-full-redirect-url}")
+    private String testfullredirecturl;
+
     @Test
     public void test() throws Exception {
 
-        mvc.perform(get("/api/auth/url?redirect=http://localhost:3000/*")
+        mvc.perform(get(testfullredirecturl)
                 .contentType(MediaType.ALL))
                 .andExpect(status().isOk())
                 .andExpect(content()
@@ -75,7 +91,7 @@ public class AuthControllerTestTwo {
     @Test
     public void testUrl() throws Exception {
 
-        mvc.perform(get("/api/auth/url?redirect=http://localhost:3000/*")
+        mvc.perform(get(testfullredirecturl)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content()
@@ -87,7 +103,7 @@ public class AuthControllerTestTwo {
     @Test
     public void testToken_MockKeycloak() throws Exception {
         //keycloakService.keycloakRequest()
-        MvcResult test = mvc.perform(get("/api/auth/url?redirect=http://localhost:3000/*")
+        MvcResult test = mvc.perform(get(testfullredirecturl)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andReturn();
         String a = test.getResponse().getContentAsString();
@@ -124,7 +140,7 @@ public class AuthControllerTestTwo {
     @Test
     public void testToken_MockKeycloakSecontTry() throws Exception {
         //keycloakService.keycloakRequest()
-        MvcResult test = mvc.perform(get("/api/auth/url?redirect=http://localhost:3000/*")
+        MvcResult test = mvc.perform(get(testfullredirecturl)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andReturn();
         String a = test.getResponse().getContentAsString();
@@ -165,10 +181,10 @@ public class AuthControllerTestTwo {
 
         AuthUrl url = new AuthUrl();
         url.setUrl("url");
-        Mockito.when(keycloakService.generateAuthUrl("http://localhost:3000/*")).thenReturn(url);
+        Mockito.when(keycloakService.generateAuthUrl(testredirecturl)).thenReturn(url);
 
-        Mockito.when(keycloakService.generateAuthUrl("http://localhost:3000/*")).thenReturn(url);
-        var response = controller.getAuthUrl("http://localhost:3000/*");
+        Mockito.when(keycloakService.generateAuthUrl(testredirecturl)).thenReturn(url);
+        var response = controller.getAuthUrl(testredirecturl);
         assertEquals(url, response.getBody());
     }
 
@@ -182,7 +198,7 @@ public class AuthControllerTestTwo {
         url.setUrl("url");
 
         Mockito.when(keycloakService.findAuthUrl(access)).thenReturn(url);
-        var response = controller.getAuthUrl("http://localhost:300/*");
+        var response = controller.getAuthUrl(testredirecturl); //3000?
         try {
             Mockito.when(keycloakService.keycloakRequest(access.getCode(), url)).thenReturn("token");
         } catch (UnirestException e) {
@@ -202,8 +218,8 @@ public class AuthControllerTestTwo {
                 Unirest.post(token_endpoint)
                         .header("content-type", "application/x-www-form-urlencoded")
                         .body("grant_type=password&client_id=" + keycloak_client_id
-                                + "&password=" + "password"
-                                + "&username=" + "georgtest"
+                                + "&password=" + testpassword
+                                + "&username=" + testusername
                                 // +"&redirect_uri="+auth.getRedirect() // brauche ich nicht? weil in keycloak console
                                 + "&client_secret=" + client_secret
                         )
@@ -220,7 +236,7 @@ public class AuthControllerTestTwo {
         tokenAccess.setRefresh_token(refreshToken);
 
         HttpResponse<String> responseToken =
-                Unirest.post("http://localhost:8000/api/auth/tokenRefreshToken")
+                Unirest.post(testrefreshtokenapi)
                         .header("content-type", "application/json")
                         .body("{\"refresh_token\": \"" + refreshToken + "\"}"
                         )
@@ -235,7 +251,7 @@ public class AuthControllerTestTwo {
 
 
         HttpResponse<String> responseTest =
-                Unirest.get("http://localhost:8000/test/user")
+                Unirest.get(testuserapi)
                         .header("authorization", "Bearer " + accessToken)
 
                         .asString();

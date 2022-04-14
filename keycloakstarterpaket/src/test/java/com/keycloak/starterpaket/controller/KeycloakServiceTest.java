@@ -26,13 +26,30 @@ public class KeycloakServiceTest {
     @Value("${token-endpoint}")
     private String token_endpoint;
 
+    @Value("${test-password}")
+    private String testpassword;
+
+    @Value("${test-username}")
+    private String testusername;
+
+    @Value("${test-redirect-url}")
+    private String testredirecturl;
+
+    @Value("${test-user-api}")
+    private String testuserapi;
+    @Value("${test-refreshtoken-api}")
+    private String testrefreshtokenapi;
+    @Value("${test-full-redirect-url}")
+    private String testfullredirecturl;
+
+
     @Test
     public void generateAuthUrlTest() throws Exception {
 
-       var test = keycloakService.generateAuthUrl("http://localhost:3000/*");
+       var test = keycloakService.generateAuthUrl(testredirecturl);
         String url = test.getUrl();
 
-        Assert.assertTrue(url.contains("redirect_uri=http://localhost:3000/*"));
+        Assert.assertTrue(url.contains("redirect_uri=" + testredirecturl));
         Assert.assertTrue(url.contains("response_type=code"));
         Assert.assertTrue(url.contains("code_challenge"));
         Assert.assertTrue(url.contains("code_challenge_method=S256"));
