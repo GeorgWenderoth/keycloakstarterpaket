@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @EnableAutoConfiguration(exclude = SecurityAutoConfiguration.class)
 
-public class AuthControllerTestTwo {
+public class AuthControllerTest {
     @Autowired
     private MockMvc mvc;
 
@@ -100,7 +100,7 @@ public class AuthControllerTestTwo {
 
     }
 
-    @Test
+   /* @Test
     public void testToken_MockKeycloak() throws Exception {
         //keycloakService.keycloakRequest()
         MvcResult test = mvc.perform(get(testfullredirecturl)
@@ -135,10 +135,10 @@ public class AuthControllerTestTwo {
                 "21pKwSN5xL9BagZr4PXkBaD7Dmvnk\",\"token_type\":\"Bearer\",\"not-before-policy\":0,\"session_state\":\"5f444c" +
                 "05-68cd-4de6-99f3-973dca4f51d0\",\"scope\":\"profile email\"}", response.getBody());
     }
-
+   */
 
     @Test
-    public void testToken_MockKeycloakSecontTry() throws Exception {
+    public void test_Controller_getToken_with_UrlAPI_mock_keycloakRequest() throws Exception {
         //keycloakService.keycloakRequest()
         MvcResult test = mvc.perform(get(testfullredirecturl)
                 .contentType(MediaType.APPLICATION_JSON))
