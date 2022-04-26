@@ -4,19 +4,21 @@ package com.keycloak.starterpaket.controller;
 import com.keycloak.starterpaket.requests.AuthAccess;
 import com.keycloak.starterpaket.responses.AuthUrl;
 import com.keycloak.starterpaket.service.KeycloakService;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.runner.RunWith;
+
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.test.context.junit4.SpringRunner;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 @ExtendWith(MockitoExtension.class)
-@RunWith(SpringRunner.class)
 public class KeycloakServiceTest {
 
     private  KeycloakService keycloakService;
@@ -44,29 +46,29 @@ public class KeycloakServiceTest {
     private String testfullredirecturl;
 
     @BeforeEach
-    void setup (){
+    void setup () {
         keycloakService = new KeycloakService();
     }
 
     @Test
     public void generateAuthUrlTest() throws Exception {
 
-       var test = keycloakService.generateAuthUrl(testredirecturl);
+        var test = keycloakService.generateAuthUrl(testredirecturl);
         String url = test.getUrl();
 
-        Assert.assertTrue(url.contains("redirect_uri=" + testredirecturl));
-        Assert.assertTrue(url.contains("response_type=code"));
-        Assert.assertTrue(url.contains("code_challenge"));
-        Assert.assertTrue(url.contains("code_challenge_method=S256"));
-        Assert.assertTrue(url.contains("client_id"));
+        Assertions.assertTrue(url.contains("redirect_uri=" + testredirecturl));
+        Assertions.assertTrue(url.contains("response_type=code"));
+        Assertions.assertTrue(url.contains("code_challenge"));
+        Assertions.assertTrue(url.contains("code_challenge_method=S256"));
+        Assertions.assertTrue(url.contains("client_id"));
     }
 
     @Test
     public void test_generateAuthUrlSecondTest() throws Exception {
         var test = keycloakService.generateAuthUrl("zapp");
         String url = test.getUrl();
-        Assert.assertTrue(url.contains("redirect_uri=zapp"));
-        Assert.assertFalse(url.contains("redirect_uri=http://localhost:3000/*"));
+        Assertions.assertTrue(url.contains("redirect_uri=zapp"));
+        Assertions.assertFalse(url.contains("redirect_uri=http://localhost:3000/*"));
     }
 
     @Test
@@ -76,9 +78,11 @@ public class KeycloakServiceTest {
         access.setAccess_code("456");
         var authUrl = new AuthUrl();
         authUrl.setAccess_code("456");
-        AuthUrl.urls.add(authUrl);
+
+        ReflectionTestUtils.setField(keycloakService, "urls", Arrays.asList(authUrl));
+
         var test = keycloakService.findAuthUrl(access);
-        assertEquals(authUrl, test);
+        Assertions.assertEquals(authUrl, test);
     }
 
     @Test
@@ -88,8 +92,10 @@ public class KeycloakServiceTest {
         access.setAccess_code("123");
         var authUrl = new AuthUrl();
         authUrl.setAccess_code("456");
-        AuthUrl.urls.add(authUrl);
+
+        ReflectionTestUtils.setField(keycloakService, "urls", Arrays.asList(authUrl));
+
         var test = keycloakService.findAuthUrl(access);
-        assertNull(test);
+        Assertions.assertNull(test);
     }
 }

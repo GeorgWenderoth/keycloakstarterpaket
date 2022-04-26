@@ -32,6 +32,7 @@ public class KeycloakService {
     @Value("${urls-time-to-live}")
     private int urlsTimeToLive;
 
+    private final List<AuthUrl> urls = new ArrayList<>();
 
     private String getCodeVerifier(){
         SecureRandom sr = new SecureRandom();
@@ -58,23 +59,30 @@ public class KeycloakService {
                 "state="+ state +"";
     }
 
+    public void removeAuthUrlFromUrls(AuthUrl url){
+        urls.remove(url);
+    }
 
-    private void removeAllUrlsThatAreToOld(){
-        AuthUrl.urls.removeAll( AuthUrl.urls.stream().filter(url -> (url.getLocalTime().plusMinutes(urlsTimeToLive).isBefore(LocalTime.now()))).collect(Collectors.toList()));
-        System.out.println(AuthUrl.urls);
+    public void addAuthUrlToUrls(AuthUrl url){
+        urls.add(url);
+    }
+
+    private void removeAllUrlsThatAreToOld() {
+        urls.removeAll( urls.stream().filter(url -> (url.getLocalTime().plusMinutes(urlsTimeToLive).isBefore(LocalTime.now()))).collect(Collectors.toList()));
+        System.out.println(urls);
     }
 
        public AuthUrl generateAuthUrl(String redirect) throws Exception{
            var authUrl = new AuthUrl();
            authUrl.setVerifier(getCodeVerifier());
 
-               authUrl.setChallenge(getCodeChallenge(authUrl.getVerifier()));
+           authUrl.setChallenge(getCodeChallenge(authUrl.getVerifier()));
 
            authUrl.setAccess_code(UUID.randomUUID().toString().replace("-","x"));
            authUrl.setRedirect(redirect);
            authUrl.setUrl(getAuthUrl(authUrl.getChallenge(), authUrl.getAccess_code(), redirect));
            authUrl.setLocalTime(LocalTime.now());
-           AuthUrl.urls.add(authUrl);
+           urls.add(authUrl);
            removeAllUrlsThatAreToOld();
          /*AuthUrl.urls.removeAll( AuthUrl.urls.stream().filter(url -> (url.getLocalTime().plusMinutes(3).isBefore(LocalTime.now()))).collect(Collectors.toList()));
                  //(((new Date()) -url.getTimestamp() )> 30)).collect(Collectors.toList())
@@ -83,7 +91,7 @@ public class KeycloakService {
        }
 
        public AuthUrl findAuthUrl(AuthAccess authAccess){
-           AuthUrl auth = AuthUrl.urls.stream().filter(authUrl -> authUrl.getAccess_code().equals(authAccess.getAccess_code()))
+           AuthUrl auth = urls.stream().filter(authUrl -> authUrl.getAccess_code().equals(authAccess.getAccess_code()))
                    .findFirst().orElse(null);
            return auth;
        }

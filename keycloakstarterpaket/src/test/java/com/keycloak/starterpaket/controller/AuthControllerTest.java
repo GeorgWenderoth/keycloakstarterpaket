@@ -9,10 +9,10 @@ import com.keycloak.starterpaket.service.KeycloakService;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,35 +22,34 @@ import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfi
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.io.DataInput;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 //3-15
 @ExtendWith(MockitoExtension.class)
-@RunWith(SpringRunner.class)
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.MOCK,
         classes = KeycloakstarterpaketApplication.class)
 @AutoConfigureMockMvc
-
 @EnableAutoConfiguration(exclude = SecurityAutoConfiguration.class)
-
 public class AuthControllerTest {
     @Autowired
     private MockMvc mvc;
-
-    private KeycloakService keycloakService = mock(KeycloakService.class);
-
-    private AuthController controller = new AuthController(keycloakService);
-
+    private KeycloakService keycloakService;
+    private AuthController controller;
 
     @Value("${keycloak.resource}")
     private String keycloak_client_id;
@@ -76,6 +75,12 @@ public class AuthControllerTest {
     private String testrefreshtokenapi;
     @Value("${test-full-redirect-url}")
     private String testfullredirecturl;
+
+    @BeforeEach
+    public void setup() {
+        keycloakService = mock(KeycloakService.class);
+        controller = new AuthController(keycloakService);
+    }
 
     @Test
     public void test() throws Exception {
@@ -151,10 +156,27 @@ public class AuthControllerTest {
         AuthAccess authAccess = new AuthAccess("idajowdijdaiwoj", accesscode);
         AuthUrl authUrl = new AuthUrl();
         authUrl.setAccess_code(accesscode);
-        AuthUrl.urls.add(authUrl);
+        authUrl.setLocalTime(LocalTime.now());
+       // keycloakService.addAuthUrlToUrls(authUrl);
+        // AuthUrl.urls.add(authUrl);
 
         System.out.println("log:" + authUrl.toString());
         System.out.println(authAccess);
+
+       // ReflectionTestUtils.setField(keycloakService, "urls", Arrays.asList(authUrl));  */
+     /*   Mockito.when(keycloakService.generateAuthUrl(testredirecturl)).thenCallRealMethod();
+
+        var a = controller.getAuthUrl(testredirecturl);
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> map = mapper.readValue((DataInput) a, Map.class);
+        String accesscode = (String) map.get("access_code");
+        AuthAccess authAccess = new AuthAccess("idajowdijdaiwoj", accesscode);
+        //AuthUrl authUrl = new AuthUrl();
+       // authUrl.setAccess_code(accesscode);
+
+
+        //a.getBody();
+*/
         Mockito.when(keycloakService.findAuthUrl(authAccess)).thenCallRealMethod();
 
         Mockito.when(keycloakService.keycloakTokenRequest("idajowdijdaiwoj", authUrl)).thenReturn("{\"access_token\":\"eyJhbGciOiJSUzI1" +
@@ -167,7 +189,7 @@ public class AuthControllerTest {
         Mockito.when(controller.getToken(authAccess)).thenCallRealMethod();
         //AuthAccess authAccess = new AuthAccess("idajowdijdaiwoj", accesscode);
         var response = controller.getToken(authAccess);
-        assertEquals("{\"access_token\":\"eyJhbGciOiJSUzI1" +
+        Assertions.assertEquals("{\"access_token\":\"eyJhbGciOiJSUzI1" +
                 "NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJlR2tjanE3Y3lQcElqeTRJazZ3TFVMaFgxSmc5cjdTcVdSSEJDSVB6QXYwIn0.eyJleHAiOjE2NDcyNjYyMTY" +
                 "sImlhdCI6MTY0NzI2NTg1NiwiYXV0aF90aW1lIjoxNjQ3MjY1ODE3LCJqdGkiOiJjMGYyMzJkMC0zZWMzLTQ5YjQtYWY1Yi1kNzFiMWE5OTYyYWEiLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1NwcmluZ2Jvb3RLZXljbG9hayIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiI2ZjAwM2U2ZC1kMzRjLTRjM2QtYjI2MS1hYmEzNjg2ZTUwMGQiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJsb2dpbi1hcHAiLCJzZXNzaW9uX3N0YXRlIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIiwiYWNyIjoiMSIsInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJkZWZhdWx0LXJvbGVzLXNwcmluZ2Jvb3RrZXljbG9hayIsIm9mZmxpbmVfYWNjZXNzIiwidW1hX2F1dGhvcml6YXRpb24iLCJ1c2VyIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJwcm9maWxlIGVtYWlsIiwic2lkIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJuYW" +
                 "1lIjoiaGVpZGkga2x1bSIsInByZWZlcnJlZF91c2VybmFtZSI6ImhlaWRpIiwiZ2l2ZW5fbmFtZSI6ImhlaWRpIiwiZmFtaWx5X25hbWUiOiJrbHVtIiwiZW1haWwiOiJoZWlkaUBrbHVtLmRlIn0.g7nIzz48dCVhPLqJdA7EM3M-GAkxgOljP731xrrCimFe4cJaYV_Q9fOPJyCJsP1Mgbn2XeswLFz73Zwx_RF3RNcThUSRA2raQcUQUilDdiXD3h_YP4nnlMFc40Z5Vo5sTIohRgNe2JtAVNTUsE3VpvqobICww9PQPvA12jiVgwnKXN2f62WRMNKQYT_3LvXGTxdI4QwRE_PmUyS2STDx-vH83FcAYOuxvjpETkXJRMSgy3w85lFMdq4VCFFAcUUK8tPviA8DWveyVryeXdnRpanvvhtuo90PYfqbA1MRiZtV68HXEmKxq7pSzH9wlMSTN4GErugu1pGaXaQ3v6GwhQ\",\"expires_in\":360,\"refresh_expires_in\":1800,\"refresh_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI4M2ViYjFkYi1mZWFiLTQxZDEtYjhiNS0wMzFlMTdmYTNhZGQifQ.eyJleHAiOjE2NDcyNjc2NTYsImlhdCI6MTY0NzI2NTg1NiwianRpIjoiYTBmNTllYjAtZGE0MS00NjAzLWJiZWItNTNhYjU3OTRkM2Q4IiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9TcHJpbmdib290S2V5Y2xvYWsiLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1NwcmluZ2Jvb3RLZXljbG9hayIsInN1YiI6IjZmMDAzZTZkLWQzNGMtNGMzZC1iMjYxLWFiYTM2ODZlNTAwZCIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJsb2dpbi1hcHAiLCJzZXNzaW9uX3N0YXRlIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIiwic2NvcGUiOiJwcm9maWxlIGVtYWlsIiwic2lkIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIn0.irNyresT9wUo0F" +
@@ -185,7 +207,7 @@ public class AuthControllerTest {
 
 
         var response = controller.getAuthUrl(testredirecturl);
-        assertEquals(url, response.getBody());
+        Assertions.assertEquals(url, response.getBody());
     }
 
     @Test
@@ -207,7 +229,7 @@ public class AuthControllerTest {
 
         var test = controller.getToken(access);
 
-        assertEquals("token", test.getBody());
+        Assertions.assertEquals("token", test.getBody());
     }
 
 
@@ -224,8 +246,8 @@ public class AuthControllerTest {
                                 + "&client_secret=" + client_secret
                         )
                         .asString();
-        Assert.assertTrue(response.getBody().contains("access_token"));
-        Assert.assertTrue(response.getBody().contains("refresh_token"));
+        Assertions.assertTrue(response.getBody().contains("access_token"));
+        Assertions.assertTrue(response.getBody().contains("refresh_token"));
 
 
         ObjectMapper mapper = new ObjectMapper();
@@ -243,7 +265,7 @@ public class AuthControllerTest {
                         .asString();
 
         System.out.println("responseToken: " + responseToken.getBody());
-        Assert.assertTrue(responseToken.getBody().contains("access_token"));
+        Assertions.assertTrue(responseToken.getBody().contains("access_token"));
 
         ObjectMapper mapperS = new ObjectMapper();
         Map<String, Object> mapS = mapperS.readValue(response.getBody(), Map.class);
@@ -257,6 +279,6 @@ public class AuthControllerTest {
                         .asString();
 
         System.out.println(responseTest.getBody());
-        Assert.assertTrue(responseTest.getBody().contains("Email"));
+        Assertions.assertTrue(responseTest.getBody().contains("Email"));
     }
 }
