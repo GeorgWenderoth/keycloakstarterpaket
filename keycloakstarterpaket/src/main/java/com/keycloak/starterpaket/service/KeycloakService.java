@@ -13,8 +13,10 @@ import org.springframework.stereotype.Service;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
-import java.util.Base64;
-import java.util.UUID;
+import java.time.LocalTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
 @Service
 public class KeycloakService {
 
@@ -26,6 +28,9 @@ public class KeycloakService {
     private String auth_endpoint;
     @Value("${keycloak.credentials.secret}")
     private String client_secret;
+
+    @Value("${urls-time-to-live}")
+    private int urlsTimeToLive;
 
 
     private String getCodeVerifier(){
@@ -53,6 +58,12 @@ public class KeycloakService {
                 "state="+ state +"";
     }
 
+
+    private void removeAllUrlsThatAreToOld(){
+        AuthUrl.urls.removeAll( AuthUrl.urls.stream().filter(url -> (url.getLocalTime().plusMinutes(urlsTimeToLive).isBefore(LocalTime.now()))).collect(Collectors.toList()));
+        System.out.println(AuthUrl.urls);
+    }
+
        public AuthUrl generateAuthUrl(String redirect) throws Exception{
            var authUrl = new AuthUrl();
            authUrl.setVerifier(getCodeVerifier());
@@ -62,7 +73,12 @@ public class KeycloakService {
            authUrl.setAccess_code(UUID.randomUUID().toString().replace("-","x"));
            authUrl.setRedirect(redirect);
            authUrl.setUrl(getAuthUrl(authUrl.getChallenge(), authUrl.getAccess_code(), redirect));
+           authUrl.setLocalTime(LocalTime.now());
            AuthUrl.urls.add(authUrl);
+           removeAllUrlsThatAreToOld();
+         /*AuthUrl.urls.removeAll( AuthUrl.urls.stream().filter(url -> (url.getLocalTime().plusMinutes(3).isBefore(LocalTime.now()))).collect(Collectors.toList()));
+                 //(((new Date()) -url.getTimestamp() )> 30)).collect(Collectors.toList())
+           System.out.println(AuthUrl.urls); */
            return authUrl;
        }
 
@@ -72,21 +88,21 @@ public class KeycloakService {
            return auth;
        }
 
-       public String keycloakRequest(String code, AuthUrl auth) throws UnirestException {
+       public String keycloakTokenRequest(String code, AuthUrl auth) throws UnirestException {
            HttpResponse<String> response =
                    Unirest.post(token_endpoint)
                            .header("content-type", "application/x-www-form-urlencoded")
                            .body("grant_type=authorization_code&client_id="+keycloak_client_id
                                    +"&code_verifier="+auth.getVerifier()
                                    +"&code="+code
-                                   +"&redirect_uri="+auth.getRedirect() // brauche ich nicht? weil in keycloak console // brauche ich doch, sonst fehler
+                                   +"&redirect_uri="+auth.getRedirect() // brauche ich doch, sonst fehler // warum?
                                    +"&client_secret="+client_secret
                            )
                            .asString();
            return response.getBody();
        }
 
-    public String keycloakTokenRefreshTokenRequest(RefreshTokenAccess refreshToken) throws UnirestException {
+    public String keycloakTokenRequestWithRefreshToken(RefreshTokenAccess refreshToken) throws UnirestException {
         HttpResponse<String> response =
                 Unirest.post(token_endpoint)
                         .header("content-type", "application/x-www-form-urlencoded")

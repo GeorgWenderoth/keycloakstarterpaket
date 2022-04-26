@@ -34,14 +34,14 @@ public class AuthController {
         if(auth == null){
             return ResponseEntity.notFound().build();
         }
-       String body = keycloakService.keycloakRequest(authAccess.getCode(), auth);
+       String body = keycloakService.keycloakTokenRequest(authAccess.getCode(), auth);
         AuthUrl.urls.remove(auth);
         return ResponseEntity.ok(body);
     }
 
     @PostMapping("tokenRefreshToken")
     public ResponseEntity<?> getTokenWithRefreshtoken(@RequestBody RefreshTokenAccess refreshToken) throws UnirestException {
-        String body = keycloakService.keycloakTokenRefreshTokenRequest(refreshToken);
+        String body = keycloakService.keycloakTokenRequestWithRefreshToken(refreshToken);
         return ResponseEntity.ok(body);
     }
 

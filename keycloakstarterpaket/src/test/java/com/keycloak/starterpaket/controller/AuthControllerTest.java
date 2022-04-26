@@ -89,7 +89,7 @@ public class AuthControllerTest {
     }
 
     @Test
-    public void testUrl() throws Exception {
+    public void test_Api_Url() throws Exception {
 
         mvc.perform(get(testfullredirecturl)
                 .contentType(MediaType.APPLICATION_JSON))
@@ -138,7 +138,7 @@ public class AuthControllerTest {
    */
 
     @Test
-    public void test_Controller_getToken_with_UrlAPI_mock_keycloakRequest() throws Exception {
+    public void test_Controller_getToken_with_UrlAPI_Mock_keycloakRequest() throws Exception {
         //keycloakService.keycloakRequest()
         MvcResult test = mvc.perform(get(testfullredirecturl)
                 .contentType(MediaType.APPLICATION_JSON))
@@ -157,7 +157,7 @@ public class AuthControllerTest {
         System.out.println(authAccess);
         Mockito.when(keycloakService.findAuthUrl(authAccess)).thenCallRealMethod();
 
-        Mockito.when(keycloakService.keycloakRequest("idajowdijdaiwoj", authUrl)).thenReturn("{\"access_token\":\"eyJhbGciOiJSUzI1" +
+        Mockito.when(keycloakService.keycloakTokenRequest("idajowdijdaiwoj", authUrl)).thenReturn("{\"access_token\":\"eyJhbGciOiJSUzI1" +
                 "NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJlR2tjanE3Y3lQcElqeTRJazZ3TFVMaFgxSmc5cjdTcVdSSEJDSVB6QXYwIn0.eyJleHAiOjE2NDcyNjYyMTY" +
                 "sImlhdCI6MTY0NzI2NTg1NiwiYXV0aF90aW1lIjoxNjQ3MjY1ODE3LCJqdGkiOiJjMGYyMzJkMC0zZWMzLTQ5YjQtYWY1Yi1kNzFiMWE5OTYyYWEiLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1NwcmluZ2Jvb3RLZXljbG9hayIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiI2ZjAwM2U2ZC1kMzRjLTRjM2QtYjI2MS1hYmEzNjg2ZTUwMGQiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJsb2dpbi1hcHAiLCJzZXNzaW9uX3N0YXRlIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIiwiYWNyIjoiMSIsInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJkZWZhdWx0LXJvbGVzLXNwcmluZ2Jvb3RrZXljbG9hayIsIm9mZmxpbmVfYWNjZXNzIiwidW1hX2F1dGhvcml6YXRpb24iLCJ1c2VyIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJwcm9maWxlIGVtYWlsIiwic2lkIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJuYW" +
                 "1lIjoiaGVpZGkga2x1bSIsInByZWZlcnJlZF91c2VybmFtZSI6ImhlaWRpIiwiZ2l2ZW5fbmFtZSI6ImhlaWRpIiwiZmFtaWx5X25hbWUiOiJrbHVtIiwiZW1haWwiOiJoZWlkaUBrbHVtLmRlIn0.g7nIzz48dCVhPLqJdA7EM3M-GAkxgOljP731xrrCimFe4cJaYV_Q9fOPJyCJsP1Mgbn2XeswLFz73Zwx_RF3RNcThUSRA2raQcUQUilDdiXD3h_YP4nnlMFc40Z5Vo5sTIohRgNe2JtAVNTUsE3VpvqobICww9PQPvA12jiVgwnKXN2f62WRMNKQYT_3LvXGTxdI4QwRE_PmUyS2STDx-vH83FcAYOuxvjpETkXJRMSgy3w85lFMdq4VCFFAcUUK8tPviA8DWveyVryeXdnRpanvvhtuo90PYfqbA1MRiZtV68HXEmKxq7pSzH9wlMSTN4GErugu1pGaXaQ3v6GwhQ\",\"expires_in\":360,\"refresh_expires_in\":1800,\"refresh_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI4M2ViYjFkYi1mZWFiLTQxZDEtYjhiNS0wMzFlMTdmYTNhZGQifQ.eyJleHAiOjE2NDcyNjc2NTYsImlhdCI6MTY0NzI2NTg1NiwianRpIjoiYTBmNTllYjAtZGE0MS00NjAzLWJiZWItNTNhYjU3OTRkM2Q4IiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9TcHJpbmdib290S2V5Y2xvYWsiLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1NwcmluZ2Jvb3RLZXljbG9hayIsInN1YiI6IjZmMDAzZTZkLWQzNGMtNGMzZC1iMjYxLWFiYTM2ODZlNTAwZCIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJsb2dpbi1hcHAiLCJzZXNzaW9uX3N0YXRlIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIiwic2NvcGUiOiJwcm9maWxlIGVtYWlsIiwic2lkIjoiNWY0NDRjMDUtNjhjZC00ZGU2LTk5ZjMtOTczZGNhNGY1MWQwIn0.irNyresT9wUo0F" +
@@ -176,20 +176,20 @@ public class AuthControllerTest {
     }
 
     @Test
-    public void mockControllerUrlTest() throws Exception {
+    public void Test_Controller_getAuthUrl_Mock_KeycloakService_generateAuthUrl() throws Exception {
 
 
         AuthUrl url = new AuthUrl();
         url.setUrl("url");
         Mockito.when(keycloakService.generateAuthUrl(testredirecturl)).thenReturn(url);
 
-        Mockito.when(keycloakService.generateAuthUrl(testredirecturl)).thenReturn(url);
+
         var response = controller.getAuthUrl(testredirecturl);
         assertEquals(url, response.getBody());
     }
 
     @Test
-    public void mockControllerToken() throws UnirestException {
+    public void Test_Controller_getToken_Mock_KeycloakService_findAuthUrl_And_keycloakRequest() throws UnirestException {
 
         AuthAccess access = new AuthAccess();
         access.setAccess_code("abc");
@@ -200,7 +200,7 @@ public class AuthControllerTest {
         Mockito.when(keycloakService.findAuthUrl(access)).thenReturn(url);
         var response = controller.getAuthUrl(testredirecturl); //3000?
         try {
-            Mockito.when(keycloakService.keycloakRequest(access.getCode(), url)).thenReturn("token");
+            Mockito.when(keycloakService.keycloakTokenRequest(access.getCode(), url)).thenReturn("token");
         } catch (UnirestException e) {
             e.printStackTrace();
         }

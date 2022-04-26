@@ -3,8 +3,9 @@ package com.keycloak.starterpaket.responses;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
-import java.util.ArrayList;
-import java.util.List;
+import javax.annotation.PostConstruct;
+import java.time.LocalTime;
+import java.util.*;
 
 
 @Data
@@ -18,6 +19,27 @@ public class AuthUrl {
     @JsonIgnore
     private String redirect;
 
+    @JsonIgnore
+    LocalTime localTime;
+
     private String url;
     private String access_code;
+
+   /* @JsonIgnore
+    private Date timestamp;
+
+    @JsonIgnore
+
+    private Timer timer;
+
+
+
+    @JsonIgnore
+    Calendar calendar;
+
+*/
+
+
+
+
 }

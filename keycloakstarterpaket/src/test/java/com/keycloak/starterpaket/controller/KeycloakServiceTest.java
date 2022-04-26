@@ -6,6 +6,7 @@ import com.keycloak.starterpaket.responses.AuthUrl;
 import com.keycloak.starterpaket.service.KeycloakService;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.runner.RunWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -18,7 +19,7 @@ import static org.junit.Assert.assertNull;
 @RunWith(SpringRunner.class)
 public class KeycloakServiceTest {
 
-    private  KeycloakService keycloakService = new KeycloakService();
+    private  KeycloakService keycloakService;
 
     @Value("${keycloak.resource}")
     private String keycloak_client_id;
@@ -42,6 +43,10 @@ public class KeycloakServiceTest {
     @Value("${test-full-redirect-url}")
     private String testfullredirecturl;
 
+    @BeforeEach
+    void setup (){
+        keycloakService = new KeycloakService();
+    }
 
     @Test
     public void generateAuthUrlTest() throws Exception {
@@ -77,7 +82,7 @@ public class KeycloakServiceTest {
     }
 
     @Test
-    public void test_findAuthUrl_withwrongcode_expectNull(){
+    public void test_findAuthUrl_with_wrong_code_expectNull(){
         AuthAccess access = new AuthAccess();
         access.setCode("123");
         access.setAccess_code("123");
