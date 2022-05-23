@@ -34,7 +34,7 @@ public class AuthController {
         if(auth == null){
             return ResponseEntity.notFound().build();
         }
-       String body = keycloakService.keycloakTokenRequest(authAccess.getCode(), auth);
+       String body = keycloakService.keycloakTokenRequest(authAccess.getAuthorization_code(), auth);
         keycloakService.removeAuthUrlFromUrls(auth);
         return ResponseEntity.ok(body);
     }

@@ -17,7 +17,7 @@ import java.util.Map;
 @CrossOrigin("*")
 public class TestController {
 
-    @RolesAllowed({"login-app-user"}) //user, login-app-user
+    @RolesAllowed({"user"})                                                                   //user, login-app-user
     @GetMapping("/test/user")
     public ResponseEntity<?> testUser(){
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
