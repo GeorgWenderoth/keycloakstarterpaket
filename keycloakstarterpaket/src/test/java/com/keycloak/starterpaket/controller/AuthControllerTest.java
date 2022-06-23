@@ -215,14 +215,14 @@ public class AuthControllerTest {
 
         AuthAccess access = new AuthAccess();
         access.setAccess_code("abc");
-        access.setCode("123");
+        access.setAuthorization_code("123");
         AuthUrl url = new AuthUrl();
         url.setUrl("url");
 
         Mockito.when(keycloakService.findAuthUrl(access)).thenReturn(url);
         var response = controller.getAuthUrl(testredirecturl); //3000?
         try {
-            Mockito.when(keycloakService.keycloakTokenRequest(access.getCode(), url)).thenReturn("token");
+            Mockito.when(keycloakService.keycloakTokenRequest(access.getAuthorization_code(), url)).thenReturn("token");
         } catch (UnirestException e) {
             e.printStackTrace();
         }

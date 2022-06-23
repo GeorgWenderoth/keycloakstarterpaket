@@ -74,7 +74,7 @@ public class KeycloakServiceTest {
     @Test
     public void test_findAuthUrl(){
         AuthAccess access = new AuthAccess();
-        access.setCode("123");
+        access.setAuthorization_code("123");
         access.setAccess_code("456");
         var authUrl = new AuthUrl();
         authUrl.setAccess_code("456");
@@ -88,7 +88,7 @@ public class KeycloakServiceTest {
     @Test
     public void test_findAuthUrl_with_wrong_code_expectNull(){
         AuthAccess access = new AuthAccess();
-        access.setCode("123");
+        access.setAuthorization_code("123");
         access.setAccess_code("123");
         var authUrl = new AuthUrl();
         authUrl.setAccess_code("456");
