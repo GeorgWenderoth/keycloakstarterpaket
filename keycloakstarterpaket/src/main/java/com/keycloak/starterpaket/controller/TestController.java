@@ -9,7 +9,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import javax.annotation.security.RolesAllowed;
 import java.util.Map;
 
@@ -17,7 +16,7 @@ import java.util.Map;
 @CrossOrigin("*")
 public class TestController {
 
-    @RolesAllowed({"user"})                                                                   //user, login-app-user
+    @RolesAllowed({"user"})
     @GetMapping("/test/user")
     public ResponseEntity<?> testUser(){
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

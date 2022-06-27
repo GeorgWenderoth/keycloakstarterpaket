@@ -1,6 +1,5 @@
 package com.keycloak.starterpaket.service;
 
-
 import com.keycloak.starterpaket.requests.AuthAccess;
 import com.keycloak.starterpaket.requests.RefreshTokenAccess;
 import com.keycloak.starterpaket.responses.AuthUrl;
@@ -9,7 +8,6 @@ import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
@@ -63,10 +61,6 @@ public class KeycloakService {
         urls.remove(url);
     }
 
-    public void addAuthUrlToUrls(AuthUrl url){
-        urls.add(url);
-    }
-
     private void removeAllUrlsThatAreToOld() {
         urls.removeAll( urls.stream().filter(url ->
                 (url.getLocalTime().plusMinutes(urlsTimeToLive).isBefore(LocalTime.now())))
@@ -83,7 +77,6 @@ public class KeycloakService {
            authUrl.setLocalTime(LocalTime.now());
            urls.add(authUrl);
            removeAllUrlsThatAreToOld();
-
            return authUrl;
        }
 
@@ -101,7 +94,7 @@ public class KeycloakService {
                            .body("grant_type=authorization_code&client_id="+keycloak_client_id
                                    +"&code_verifier="+auth.getCode_verifier()
                                    +"&code="+authorization_code
-                                   +"&redirect_uri="+auth.getRedirect()                                     // brauche ich doch, sonst fehler // warum?
+                                   +"&redirect_uri="+auth.getRedirect()
                                    +"&client_secret="+client_secret
                            )
                            .asString();
@@ -114,7 +107,7 @@ public class KeycloakService {
                 Unirest.post(token_endpoint)
                         .header("content-type", "application/x-www-form-urlencoded")
                         .body("grant_type=refresh_token&client_id="+keycloak_client_id
-                                +"&refresh_token="+refreshToken.getRefresh_token()                                                           // +"&redirect_uri="+ "http://localhost:3000/*"
+                                +"&refresh_token="+refreshToken.getRefresh_token()
                                 +"&client_secret="+client_secret
                         )
                         .asString();
@@ -126,11 +119,10 @@ public class KeycloakService {
                 Unirest.post(token_endpoint)
                         .header("content-type", "application/x-www-form-urlencoded")
                         .body("grant_type=client_credentials&client_id="+keycloak_client_id
-                                +"&redirect_uri="+ "http://localhost:3000/*" // brauche ich nicht? weil in keycloak console
+                                +"&redirect_uri="+ "http://localhost:3000/*"
                                 +"&client_secret="+client_secret
                         )
                         .asString();
         return response.getBody();
-
     }
 }
